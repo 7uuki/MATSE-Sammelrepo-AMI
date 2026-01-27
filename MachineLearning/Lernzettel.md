@@ -1,5 +1,190 @@
-# Machine Learning Programmierung Cheat Cheet 
-## Basics
+# Machine Learning Übersicht
+
+## Inhaltsverzeichnis
+
+- [Machine Learning Übersicht](#machine-learning-übersicht)
+  - [Inhaltsverzeichnis](#inhaltsverzeichnis)
+  - [1. Lernarten](#1-lernarten)
+    - [1.1 Überwachtes Lernen](#11-überwachtes-lernen)
+    - [1.2 Unüberwachtes Lernen](#12-unüberwachtes-lernen)
+  - [2. Algorithmen](#2-algorithmen)
+  - [3. Transformationen](#3-transformationen)
+  - [4. Modellqualität](#4-modellqualität)
+  - [5. Validierung](#5-validierung)
+  - [6. Statistische Prinzipien](#6-statistische-prinzipien)
+  - [Klassifikation](#klassifikation)
+  - [Regression](#regression)
+  - [Basics Pythonlibs](#basics-pythonlibs)
+    - [Explorative Datenanlyse](#explorative-datenanlyse)
+      - [Schneller Überblick über die Daten](#schneller-überblick-über-die-daten)
+      - [Histogram](#histogram)
+    - [Matplotlib](#matplotlib)
+      - [Funktion Ploten](#funktion-ploten)
+  - [Daten Skalieren](#daten-skalieren)
+    - [`StandardScaler`](#standardscaler)
+    - [`MinMaxScaler`](#minmaxscaler)
+    - [Wann was?](#wann-was)
+  - [Der Perzepton](#der-perzepton)
+  - [PLA _Perzeption Lern-Algoritmus_](#pla-perzeption-lern-algoritmus)
+  - [Pocket - PLA Erweiterung](#pocket---pla-erweiterung)
+  - [Lineare/Polynomielle Regression](#linearepolynomielle-regression)
+  - [Nicht-Lineare Transformation](#nicht-lineare-transformation)
+  - [Lineare/Polynomielle Regression mit **Weight Decay** und Transformation](#linearepolynomielle-regression-mit-weight-decay-und-transformation)
+  - [$E\_{OUT}$ bestimmten _mit Target-Function_](#e_out-bestimmten-mit-target-function)
+  - [$E\_{IN}$ bestimmten](#e_in-bestimmten)
+  - [Validierung](#validierung)
+    - [Hold-Out-Validierung](#hold-out-validierung)
+      - [Gittersuche](#gittersuche)
+      - [Fehler Schätzen](#fehler-schätzen)
+    - [Leave-One-Out-Validierung](#leave-one-out-validierung)
+    - [V-fache Kreuzvalidierung](#v-fache-kreuzvalidierung)
+    - [`GridSearchCV`](#gridsearchcv)
+  - [Logistische Regression](#logistische-regression)
+  - [Information Gain](#information-gain)
+    - [Entropie $H(X)$](#entropie-hx)
+    - [Bedingte Entropie $H(X|Y)$](#bedingte-entropie-hxy)
+    - [Information Gain $IG(X|Y)$](#information-gain-igxy)
+    - [Regressionsbäume aufbauen](#regressionsbäume-aufbauen)
+  - [KNN Nearest Neighboour Model](#knn-nearest-neighboour-model)
+
+---
+
+## 1. Lernarten
+
+### 1.1 Überwachtes Lernen
+- **Klassifikation**  
+  - Lineare Modelle: [Perzeptron](#2-algorithmen), [Logistische Regression](#2-algorithmen), [Lineare SVM](#2-algorithmen), [ÖDA (LDA)](#2-algorithmen)  
+  - Nichtlineare Modelle: [Kernel-SVM](#2-algorithmen), [kNN](#2-algorithmen)
+- **Regression**  
+  - Linear: Lineare Regression, Ridge, Lasso  
+  - Nichtlinear: Polynomiale Regression, kNN-Regression, SVR (Kernel)
+
+### 1.2 Unüberwachtes Lernen
+- **Clustering**: K-Means  
+- **Dimensionsreduktion**: PCA, Kernel-PCA, ÖDA
+
+---
+
+## 2. Algorithmen
+- **Perzeptron / Pocket**: Lineare Klassifikation, speichert beste Lösung bei nicht separierbaren Daten  
+- **Logistische Regression**: Lineares probabilistisches Modell für Klassifikation  
+- **SVM / Kernel-SVM**: Maximale Margin Klassifikation, Kernel für nichtlineare Trennung  
+- **kNN / kNN-Regression**: Instanzbasiert, Klassifikation/Regression über Nachbarn  
+
+---
+
+## 3. Transformationen
+- **Lineare Transformation**: Drehen, Strecken, Projektion (z. B. PCA, LDA)  
+- **Nichtlineare Transformation**: Polynomfeatures, Kernel-Abbildung, Aktivierungsfunktionen  
+- **Skalierung der Daten**: Standardisierung, Min-Max, Robust, Log; wichtig für kNN, SVM, PCA, Regression  
+
+---
+
+## 4. Modellqualität
+- **Approximation**: Anpassung an Trainingsdaten  
+- **Generalisierung**: Performance auf neuen Daten  
+- **Overfitting**: Zu starkes Anpassen, schlechte Generalisierung  
+- **Regularisierung**: L1/L2-Strafterm, Margin, reduziert Overfitting  
+
+---
+
+## 5. Validierung
+- **Hold-Out**: Einmalige Aufteilung Train/Test  
+- **Leave-One-Out**: Einzelne Punkte rotierend als Test  
+- **k-Fold Kreuzvalidierung**: Rotierende Unterteilungen, stabilere Bewertung  
+- **Grid Search**: Systematische Hyperparameter-Suche  
+
+---
+
+## 6. Statistische Prinzipien
+- **Ockhams Rasiermesser**: Einfachstes Modell bevorzugen  
+- **Sampling Bias / Stichprobenverzerrung**: Trainingsdaten nicht repräsentativ  
+- **Data Snooping / p-Hacking**: Zu oft testen → Scheinerfolge
+
+
+
+---
+
+## Klassifikation
+| Verfahren                  | Linear / Nichtlinear | Methode (Funktionsprinzip)                                                                          |
+| -------------------------- | -------------------- | --------------------------------------------------------------------------------------------------- |
+| [Perzeptron](#der-perzepton) | Linear               | Lernt Gewichtungsvektor, der eine Hyperebene bildet; Klassifikation über Vorzeichen von (w^Tx+b)    |
+| [Pocket](#pocket---pla-erweiterung)     | Linear               | Erweiterung des Perzeptrons; speichert die beste bisherige Gewichtung bei nicht separierbaren Daten |
+| [Logistische Regression](#logistische-regression) | Linear | Lineares Modell mit Sigmoid-Funktion; gibt Klassenwahrscheinlichkeiten aus |
+| [Lineare SVM](#2-algorithmen)        | Linear               | Maximiert den Abstand (Margin) zwischen Klassen und Trennebene                                      |
+| [ÖDA (LDA)](#3-transformationen)     | Linear               | Projiziert Daten so, dass Klassenabstand maximiert und Streuung minimiert wird                      |
+| [Kernel-SVM](#2-algorithmen)         | Nichtlinear          | Bildet Daten mit Kernel in höherdimensionalen Raum und trennt dort linear                           |
+| [kNN](#2-algorithmen)                | Nichtlinear          | Klassifiziert anhand der Mehrheitsklasse der k nächstgelegenen Datenpunkte                          |
+| [Kernel-PCA + Klassifikator](#nicht-lineare-transformation) | Nichtlinear | Nichtlineare Merkmalsabbildung durch Kernel-PCA, danach lineare Klassifikation |
+
+| Typ         | Typische Modelle                     |
+| ----------- | ------------------------------------ |
+| Linear      | Perzeptron, LogReg, LDA, Lineare SVM |
+| Nichtlinear | Kernel-SVM, kNN                      |
+
+
+---
+
+## Regression
+| Verfahren                               | Linear / Nichtlinear | Methode (Funktionsprinzip)                                         |
+| --------------------------------------- | -------------------- | ------------------------------------------------------------------ |
+| [Lineare Regression](#linearepolynomielle-regression)                      | Linear               | Minimiert quadratischen Fehler zwischen Gerade und Daten           |
+| [Ridge Regression](#linearepolynomielle-regression-mit-weight-decay-und-transformation)                        | Linear               | Lineare Regression mit L2-Strafterm zur Vermeidung von Overfitting |
+| [Lasso Regression](#linearepolynomielle-regression-mit-weight-decay-und-transformation)                        | Linear               | Lineare Regression mit L1-Strafterm zur Merkmalsselektion          |
+| [Polynomiale Regression](#nicht-lineare-transformation)                  | Nichtlinear*         | Erweiterung der Eingaben mit Potenzen, danach lineare Regression   |
+| [Support Vector Regression (SVR, linear)](#2-algorithmen) | Linear               | Findet Regressionsgerade mit maximaler Fehlertoleranz (ε-Tube)     |
+| [Support Vector Regression (Kernel)](#2-algorithmen)      | Nichtlinear          | Kernel-Abbildung und Regression im Merkmalsraum                    |
+| [kNN-Regression](#2-algorithmen)                          | Nichtlinear          | Schätzt Zielwert als Mittelwert der k nächsten Nachbarn            |
+
+| Typ         | Typische Modelle                  |
+| ----------- | --------------------------------- |
+| Linear      | Lineare, Ridge, Lasso, Linear-SVR |
+| Nichtlinear | Polynom, kNN, Kernel-SVR          |
+
+---
+
+## Basics Pythonlibs
+### Explorative Datenanlyse
+#### Schneller Überblick über die Daten
+```python
+# feature names
+feature_names = ['Alcohol', 'Malic acid', 'Ash', 'Alcalinity of ash',
+                 'Magnesium', 'Total phenols', 'Flavanoids', 'Nonflavanoid phenols',
+                 'Proanthocyanins', 'Color intensity', 'Hue',
+                 'OD280/OD315 of diluted wines', 'Proline']
+
+data = np.genfromtxt('https://archive.ics.uci.edu/ml/machine-learning-databases/wine/wine.data',
+                     delimiter=',')
+
+X_9_2, y_9_2 = data[:, 1:], data[:, 0]
+
+import pandas as pd
+
+# DataFrame erstellen
+df = pd.DataFrame(X_9_2, columns=feature_names)
+df['Class'] = y_9_2
+# Deskriptive Statistik (Mittelwert, Std, Min, Quartile, Max)
+df.describe()
+```
+#### Histogram 
+```python
+# ausgewählte Feature-Indizes (z. B.)
+features_to_plot = [0, 4, 9, 12]  # Alcohol, Magnesium, Color intensity, Proline
+feature_labels = [feature_names[i] for i in features_to_plot]
+
+plt.figure(figsize=(10, 8))
+
+for i, idx in enumerate(features_to_plot, 1): #start bei 1 für subplot(i)
+    plt.subplot(2, 2, i)
+    plt.hist(X_9_2[:, idx], bins=30)
+    plt.title(feature_labels[i-1])
+    plt.xlabel('Wert')
+    plt.ylabel('Häufigkeit')
+
+plt.tight_layout()
+plt.show()
+```
+
 ### Matplotlib
 #### Funktion Ploten
 ```python
@@ -8,6 +193,48 @@ plt.plot(x, f(x),label="")
 ```
 
 
+## Daten Skalieren
+### `StandardScaler`
+Erzeugt **Normalverteilung** mit Mittelwert $\mu=0$ , Standardabweichung $\sigma=1$
+
+Formel: $x_{neu}=\frac{x-\mu}{\sigma}$
+```python
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X_train)
+```
+### `MinMaxScaler`
+skaliert Werte in ein **festes Intervall** (Standardbereich: $[0,1]$):
+
+Formel: $x_{neu}=\frac{x-x_{min}}{x_{max}-x_{min}}$
+```python
+from sklearn.preprocessing import MinMaxScaler
+
+scaler = MinMaxScaler()
+
+scaler.fit(X_train)
+X_train_scaled = scaler.transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+```
+### Wann was?
+Wenn dein Modell **Varianz und Abstände** nutzt → `StandardScaler`
+- Lineare Regression
+- Logistische Regression
+- SVM
+- K-Means
+- PCA
+
+Wenn dein Modell begrenzte Werte braucht **Fester Wertebereich nötig** → `MinMaxScaler`
+Features müssen vergleichbar klein sein!
+- Knn
+- Gradient-basierte Modelle
+- Distanzbasierte Verfahren
+  
+
+
+
+---
 
 ## Der Perzepton
 Idee: Finde ein Gewichtungsvektor w, sodass Datenpunkte einer Klasse auf der einen Seite liegen, der anderen auf der anderen Seite.
@@ -17,7 +244,7 @@ $b = Schwellenwert$
 $w=(b,w_1,...,w_d)^T$  
 $x=(0,x_1,...,x_d)^T$
 
- ```python 
+```python
  def h(x,w):
     return np.sign(np.dot(w.T,x))
 ```
@@ -98,6 +325,8 @@ def pocket_pla(x, y, max_iter=1000):
 ```
 
 
+---
+
 ## Lineare/Polynomielle Regression
 Pseudoinverse: $X^{(Dagger)}=(X^TX)^{-1}X^T$ 
 
@@ -134,6 +363,8 @@ f = lambda x: wlin[1]*x+wlin[0]
 ```
 
 
+---
+
 ## Nicht-Lineare Transformation
 1. Transformiere x in neue Features $ϕ(x)$ (bsp. 1D-Feature in Monombasis 4. Grad $ϕ(x)=[1, x, x^2, x^3, x^4])$
 ```python
@@ -144,6 +375,16 @@ def phi_Q(Q: int, x):
 # einfach
 def phi4(x): 
     return np.array([x, x**2, x**3, x**4]).T
+```
+```python
+from sklearn.preprocessing import PolynomialFeatures
+
+poly = PolynomialFeatures(degree=8,include_bias=True) 
+poly = PolynomialFeatures(8)
+
+poly.fit(Xtrain_scaled)
+Xtrain_transformed = poly.transform(Xtrain_scaled)
+x_line_transformed = poly.transform(Xline_scaled)
 ```
 2. Lerne eine lineares Modell (bsp lin. Regression)
 ```python
@@ -159,6 +400,8 @@ def get_final_g(x,wlin):
 def get_final_g(x,w):
     return Polynomial(w)(x) # Polynomial([w0, w1, w2, w3, ...])(x)
 ```
+
+---
 
 ## Lineare/Polynomielle Regression mit **Weight Decay** und Transformation
 Pseudoinverse: $Z^{(Dagger)}=(Z^TZ+\lambda\cdot𝟙)^{-1}Z^T$ 
@@ -188,20 +431,34 @@ def lin_reg_regulasied(x,y,lam,add_Bias=False):
     return w_reg
 ```
 ```python
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.linear_model import Ridge
+from sklearn.pipeline import Pipeline
 from sklearn.pipeline import make_pipeline
 
 Q = 8
-model = make_pipeline(
-    PolynomialFeatures(Q, include_bias=True),
-    Ridge(alpha=0.1)
+lamb = 0
+
+pipe = Pipeline(
+    [
+        ('scaler', MinMaxScaler()),
+        ('transformer', PolynomialFeatures(Q)),
+        ('regressor', Ridge(lam))
+    ], verbose=True)
+# Alternativ
+pipe = make_pipeline(
+    MinMaxScaler(),
+    PolynomialFeatures(Q),
+    Ridge(lam)
 )
 
-model.fit(x_train[:, 0].reshape(-1, 1), y_train)
+pipe.fit(Xtrain, ytrain)
+plt.plot(x_line, pipe.predict(x_line), c="steelblue", label='Vorhersagemodell')
 ```
 
 
+
+---
+
+<a id="eout"></a>
 ## $E_{OUT}$ bestimmten _mit Target-Function_
 Sei $y(x)$ der Wert der Target Function an der Stelle $x$ und sei $g(x)$ der Wert Ihrer finalen Hypothese an der Stelle $x$ definiert als die mittlere quadratische Abweichung zwischen $g$ und $y$ in diesem Interval,
 $$E_\text{out} = \frac{1}{K}\sum_k (g(x_k) - y(x_k))^2=E_\text{out} = \frac{1}{K}||g_{werte}−y_{werte}||^2$$
@@ -211,9 +468,12 @@ def get_e_out(hypothese_w, target_function, start=-1, end=1, k=50):
     y = target_function(k)
     g = get_final_g(k, hypothese_w)
     return np.mean((g-y)**2) # = Norm(g-y)**2/k
+def error_sqd(x,y,f):
+    return np.mean((f(x) - y)**2)
 ```
-## 
+---
 
+<a id="ein"></a>
 ## $E_{IN}$ bestimmten
 Seien $y(x)$ die Labels an der Stelle $x$ und sei $h(x)$ der Wert Ihrer Hypothese an der Stelle $x$ definiert als die mittlere quadratische Abweichung zwischen $g$ und $y$ in diesem Interval,
 $$E_\text{out} = \frac{1}{N}\sum_n (h(x_n) - y_n)^2$$
@@ -239,10 +499,325 @@ $$
 
 
 
+---
+
 ## Validierung
 ### Hold-Out-Validierung
 Fehlermessung auf E_val => Variante mit niedrigstem Fehler => retraining
+
+1. Modell auf Trainingsset erstellen (bsp. Lineare Regression)
+2. Modell-Parameter mithilfe von Validierungsset Optimieren (Gittersuche)
+#### Gittersuche
+```python
+Qs = np.arange(0,9,1)
+lambdas = np.arange(0,2.01,0.05)
+errors = np.empty((len(Qs), len(lambdas)))
+for q in Qs:
+    Z_q = phi_Q(q, x_train.flatten()) # lin. Transformation
+    for k, lam in enumerate(lambdas):
+        w_reg = lin_reg_regulasied(Z_q,y_train,lam,False).flatten() # Training
+        errors[q,k] = error_sqd(x_val,y_val,Polynomial(w_reg)) 
+```
+#### Fehler Schätzen
+$E_{out}$ Schätzen mit mittleren quadratischen Fehler zwischen $f(x)$ und $y$:
 ```python
 def error_sqd(x,y,f):
     return np.mean((f(x) - y)**2)
+```
+3. Finales Modell auswählen
+```python
+# Auswertung
+print(np.where(errors == np.min(errors)))
+```
+4. Retraining auf $E_{val}+E_{train}$
+```python
+x_final = np.append(x_val.flatten(), x_train.flatten())
+y_final = np.append(y_val.flatten(), y_train.flatten())
+```
+### Leave-One-Out-Validierung
+1. Abspalten eines Datenpunktes => $D_n$
+2. $^-g_n$ Hypthose lernen auf $D_n$
+3. $E_{CV}$ Kreuzvalidierungsfehler $= mean(e($^-g_n$,yn))$ ; $e()=$ Punktweise-Fehler
+```python
+# Beispiel Lineare Regularisierung mit Monombasis lin. Tranformation und weight decay
+def e_cv(X,y,q=4,lam=1,add_bias=False):
+    errors = list()
+    for i, (xi, yi) in enumerate(zip(X,y)):
+        # 1. Abspalten
+        x_n = np.delete(X, i,axis=0).flatten()
+        y_n = np.delete(y, i,axis=0).flatten()
+
+        # 2. Lernen
+        w_lin = lin_reg_regulasied(phi_Q(q, x_n), y_n, lam, add_bias).flatten()
+
+        # 3. Punktweise-Fehler
+        e_out = error_sqd(xi,yi,Polynomial(w_lin))
+        errors.append(e_out)
+    return np.mean(errors)
+```
+### V-fache Kreuzvalidierung
+genauso wie Leave-One-Out nur mir mit abspaltung 1nes Datenpunktes sondern aufteilen in V gleichgroße Teile
+
+### `GridSearchCV`
+Alle Kombinationen an **Hyperparametern** testen
+
+1. Parameter-Raum angeben
+```python
+# PipelineSchrittName__Parameter
+pipe = pipeline.Pipeline(
+    [
+        ('scaler', preprocessing.MinMaxScaler()),
+        ('transformer', preprocessing.PolynomialFeatures(Q)),
+        ('regressor', linear_model.Ridge(lamb))
+    ], verbose=True)
+
+parameters = {
+    'transformer__degree':  np.arange(1,9,1),
+    'regressor__alpha': np.linspace(0, 5, 21)
+}
+``` 
+2. Für jede Kombination:
+   - Die Daten werden in V-Folds geteilt 
+   - Modell trainieren
+   - Validieren bsp: *accuracy*,*f1*,*roc_auc*,*neg_mean_squared_error*
+
+
+```python
+grid = GridSearchCV(
+    pipe, 
+    parameters, 
+    cv=5, # 2. 5-fache Kreuzvalidierung
+    scoring='neg_mean_squared_error' #3.
+
+)
+grid.fit(X_train, y_train)
+```
+3. Beste Kombination auswählen
+```python
+k_values = grid.cv_results_['param_knn__n_neighbors']
+mean_acc = grid.cv_results_['mean_test_score']
+
+
+plt.figure()
+plt.plot(k_values, mean_acc)
+plt.xlabel("k (Anzahl Nachbarn)")
+plt.ylabel("CV-Accuracy")
+plt.title("Accuracy als Funktion von k")
+plt.show()
+```
+```python
+df = pd.DataFrame(grid.cv_results_)
+err_df = res_df.pivot(index='param_ridge__alpha', columns='param_transform__degree', values='mean_test_score')
+________
+param_transform__degree           1          2          3          4  \
+param_ridge__alpha                                                     
+0.00                     -54.149723  -3.817007  -3.135458  -1.403880   
+0.25                     -54.791484 -26.142173 -11.618897  -6.445369   
+0.50                     -59.597924 -32.191411 -16.753177  -9.551416
+_______
+mean_errors = err_df.values * -1
+plt.imshow(mean_errors, extent=[0, 8, 5, 0])
+plt.colorbar()
+best = "Optimale Parameter ($\\lambda$: {}, $Q$: {})".format(grid2.best_params_['regressor__alpha'],
+                                                             grid2.best_params_['transformer__degree'])
+```
+
+---
+
+## Logistische Regression
+1. Initialisiere Gewichte
+    ```python
+    w0 = np.random.normal(0, 1, [3])# Normalverteilt mu=0 simga=1 
+    w0 = np.ones([3])
+    w0 = np.zeros([3])
+    ```
+2. Iteration bis Abbruch für $t = 0,1,...,T$
+    1. $g_t$ = $\nabla E_{in}(w(t))$ = $\frac{1}{N} \sum_{n=1}^{N} {(-y_n x_n)\theta(-y_n w^T(t) x_n)}$ 
+    2. $v_t$ = $-g_t$
+    3. aktualisiere $w(t+1)=w(t)+\eta * v_t$
+    ### Abbruchkriterium
+    kann frei gewählt werden meist kombi
+    - Max Iterationen T **(hier Verwendet)**
+    - $E_{in}<$ def. Schwelle
+    - $\Delta E_{in}(t)$  Veränderung $<$  def. Schwelle
+
+    ### Helper
+    $\theta(s_i) = \frac{1}{1+e^{-s_i}}$  
+    $s_i = w^T x_i + b$
+    ```python
+    theta = lambda s: 1 / (1 + np.exp(- s))
+    s = lambda w,X,y: (-y * (X @ w)).reshape(-1,1)
+
+    def gradient(w,X,y):
+        return np.mean((-y.reshape(-1,1)*X) * theta(s(w,X,y)),axis=0)
+    ```
+    $E_{in}=\frac{1}{N}\sum_{n=1}^{N} {1+e^{-y_n w^T x_n}}$
+    ```python
+    def E_in(w,X,y):
+        inner_vec = 1+np.exp(-y*(X@w))
+        return np.mean(np.log(inner_vec))
+    ```
+    ### Algo
+    ```python
+    def grad_descent(w, X, y, maxiter = 400, eta = 0.1):
+        errors = []
+        w_t = w
+        for t in range(maxiter):
+            g_t = gradient(w_t, X, y) # 2.1
+            v_t = - g_t # 2.2
+            w_t = w_t + eta * v_t # 2.3
+
+            # Hier noch E_in Errors tracken (optional)
+            error = E_in(w_t, X, y) 
+            errors.append(error)
+        return w_t, errors
+    ```
+3. Auswertung
+    - $p_i = \mathbb{P}[y=+1|\mathbf{x}] = \theta(s_i) = \frac{1}{1+e^{-s_i}}$ ; $s_i = w^T x_i + b$
+    ```python
+    def get_prob_func(w, theta):
+        return lambda x: theta(1 * np.dot(w, x))
+    ```
+    ```python
+    w_erg, tracked_errors = grad_descent(w0, X, y)
+    p = get_prob_func(w_erg,theta)
+    print(f"Die Zulassungswahrscheinlichkeit beträgt {p(x_datenpunkt_test)}")
+    ```
+
+---
+
+## Information Gain
+![Decision Tree Table](https://data.bialonski.de/ml/table-decision-tree-exercise.png)
+```python
+p_ratio = lambda y, selector: len(y[selector]) / len(y)
+p_log_p = lambda p: 0.0 if p == 0 else p * np.log2(p)
+
+def entropy(y):
+    return -np.sum([p_log_p(p_ratio(y, y == k)) for k in np.unique(y)])
+
+# H(Y|X)
+def conditional_entropy(y, x_col):
+    h = 0.0
+    for v in np.unique(x_col):
+        mask = (x_col == v)
+        h += p_ratio(x_col, mask) * entropy(y[mask])
+    return h
+
+# Zielvariable: Wandern gehen (Nein=0, Ja=1)
+y_8_1 = np.array([0, 0, 1, 1, 0])
+x_8_1 = np.array([
+    [1, 0, 1, 1, 0],  # X1 Wetter
+    [1, 1, 0, 1, 0],  # X2 Temperatur
+    [0, 1, 0, 1, 1]   # X3 Wind
+]).T  # -> shape (5, 3)
+
+for i in range(x_8_1.shape[1]):
+    h = conditional_entropy(y_8_1, x_8_1[:, i])
+    print(f"H(Y|X{i+1}) = {h:.6f}")
+---
+H(Y|X1) = 0.550978
+H(Y|X2) = 0.950978
+H(Y|X3) = 0.950978
+```
+### Entropie $H(X)$
+Mittlerer Informatinosgehalt einer Zufallsvariable X
+$$H(X) = - \sum_i p_i \log_2 p_i$$
+
+
+### Bedingte Entropie $H(X|Y)$
+Der mittlere Informationsgehalt eines Ergebnisses einer Zufallsvariablen X unter der Bedingung, dass der Wert einer Zufallsvariablen Y bekannt ist, heißt bedingte Entropie $H(X|Y)$.
+$$H(X|Y = y_j) = H(X|y_i) = - \sum_{i}{p(x_i|y_i) \cdot \log_2{p(x_i|y_i)}} $$
+$$H(X|Y) = \sum_j p(y_j)\, H(X|y_j)= - \sum_{i}{p(x_i,y_i) \cdot \log_2{\frac{p(x_i,y_i)}{p(y_i)}}} $$
+
+### Information Gain $IG(X|Y)$
+Die Abnahme des mittleren Informationsgehalts eines Ergebnisses der Zufallsvariablen X
+durch Kenntnis des Ergebnisses einer Zufallsvariablen Y heißt Information Gain.
+
+= Mutual Information (symmetrisch)
+$$IG(X, Y) = H(X) - H(X \mid Y)$$
+
+
+---
+
+### Regressionsbäume aufbauen
+https://www.youtube.com/watch?v=g9c66TUylZ4
+
+
+$\big| \cdot \big|$ bezeichnet die Anzahl der Werte in einer Menge, z.B.: $\big|\{1,8,17\}\big| = 3$<br>
+$p(y=0)=\frac{\big|\{y_i|y_i=0\}\big|}{\big|y\big|}$<br>
+$p(x_{:,j} \lt z)=\frac{\big|\{x_{i,j}|x_{i,j} \lt z\}\big|}{\big|x_{:,j}\big|}$<br>
+$p(y=0|x_{:,j} \lt z)=\frac{\big|\{y_i|y_i=0,\: x_{i,j} \lt z\}\big|}{\big|\{y_i|x_{i,j} \lt z\}\big|}$
+
+$$H(Y) = - \sum_{k=1}^C{p(y=k) \cdot \log_2{p(y=k)}} $$
+```python
+p_ratio = lambda y,selector: len(y[selector])/len(y)
+p_log_p = lambda p: p*np.log2(p)
+
+def entropy(y):
+    return -1*np.sum([p_log_p(p(y,y==k)) for k in np.unique(y)])
+``` 
+$$H(Y|x_{:,j} \lt z)=- \sum_{k=1}^C{p(y=k|x_{:,j}<z) \cdot \log_2{p(y=k|x_{:,j}<z)}}$$
+```python
+def info_gain(y, x_j, z):
+    p = lambda mask: p_ratio(y,mask)
+    
+    # Masken
+    left = x_j<z
+    right = x_j>=z
+
+    return entropy(y) - (p(left)*entropy(y[left])) - (p(right)*entropy(y[right])) 
+            # H(Y)      # p(r1) * H(Y|r1)             # p(r2) * H(Y|r2)
+``` 
+$$IG(X, Y) = H(X) - \sum_j p(y_j)\, H(X|y_j)$$
+
+Für eine Region $R_0$:​
+1. Wähle Feature $j$ und Schwellenwert $z$, sodass Fehlermaß maximal reduziert wird
+   
+    **Cart-Algorithmus**
+    den Split nehmen, der für den aktuellen Knoten den maximalen IG erreicht.
+    ```python
+    def max_info_gain(y, x):
+        m = x.shape[1]
+        best_ig = 0
+        best_ig_output = (-1,-1)
+        for j in range(m):
+            x_j = x[:,j]
+            for z in np.unique(x[:,j]):
+                ig_j_z = info_gain(y,x_j,z)
+                if ig_j_z > best_ig:
+                    best_ig = ig_j_z
+                    best_ig_output = (j,z)
+            
+        return best_ig_output
+    ```
+2. Teile in $R_1=\{x|x_j \lt z\}$ & $R_2=\{x|x_j \ge z\}$
+3. Rekursiv auf $R_1$ und $R_2$
+
+```python 
+from sklearn.tree import DecisionTreeClassifier 
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import GridSearchCV
+
+dtc = DecisionTreeClassifier(criterion="entropy", max_depth=i)
+dtc.fit(X_train, y_train)
+
+y = dtc2.predict(X_test)
+acc = accuracy_score(y_test, y2)
+print(f"Depth: {i}  Accuracy: {acc}")
+```
+Mit `model_selection.GridSearchCV` optimale Baumtiefe ermitteln
+
+## KNN Nearest Neighboour Model
+```python
+from ipywidgets import interact
+import ipywidgets as widgets
+from sklearn.neighbors import KNeighborsClassifier
+
+@interact(k=widgets.IntSlider(min=1,max=50,step=1,value=1))
+def showPlot(k):
+    neighbor = KNeighborsClassifier(n_neighbors=k)
+    neighbor.fit(X_9_1, y_9_1)
+    neighbor.predict([[-3, -2]])
+
+    plot_decision_regions(X_9_1, y_9_1, neighbor)
 ```
