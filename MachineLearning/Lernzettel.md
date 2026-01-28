@@ -46,6 +46,15 @@
     - [Information Gain $IG(X|Y)$](#information-gain-igxy)
     - [Regressionsbäume aufbauen](#regressionsbäume-aufbauen)
   - [KNN Nearest Neighboour Model](#knn-nearest-neighboour-model)
+  - [SVMs Support Vector Machine](#svms-support-vector-machine)
+      - [Ausgangspunkt lineare Klassifikation](#ausgangspunkt-lineare-klassifikation)
+    - [Rand (Margin)](#rand-margin)
+  - [Hard-Margin SVM](#hard-margin-svm)
+  - [Soft-Margin SVM](#soft-margin-svm)
+  - [Kernel-Trick](#kernel-trick)
+    - [linear Kernel](#linear-kernel)
+    - [Polynimialer Kernel](#polynimialer-kernel)
+    - [Gaußer RVF-Kernel (sehr wichtig)](#gaußer-rvf-kernel-sehr-wichtig)
 
 ---
 
@@ -615,11 +624,35 @@ param_ridge__alpha
 0.25                     -54.791484 -26.142173 -11.618897  -6.445369   
 0.50                     -59.597924 -32.191411 -16.753177  -9.551416
 _______
-mean_errors = err_df.values * -1
-plt.imshow(mean_errors, extent=[0, 8, 5, 0])
-plt.colorbar()
-best = "Optimale Parameter ($\\lambda$: {}, $Q$: {})".format(grid2.best_params_['regressor__alpha'],
-                                                             grid2.best_params_['transformer__degree'])
+mean_errors = err_df.values * -1 # weil neg_mean_squared_error
+
+plt.figure(figsize=(10, 8))
+plt.imshow(err.values, origin="lower", aspect="auto")
+plt.colorbar(label="mean_test_score")
+
+# Achtung columns = x
+plt.xticks(
+    np.arange(len(err.columns)),   
+    err.columns,                 
+    rotation=45
+)
+plt.xlabel("param_transform__degree") 
+# index = y
+plt.yticks(
+    np.arange(len(err.index)),    
+    err.index,                     
+    rotation=0
+)
+plt.ylabel("param_ridge__alpha") 
+
+# optional
+y_idx, x_idx = np.unravel_index(grid.best_index_, err.values.shape)
+plt.scatter(x_idx, y_idx, marker="x",color="red")
+
+# Lösung
+print(grid.best_params_)
+print(grid_search.score(X_train, y_train))
+print(grid_search.score(X_test, y_test))
 ```
 
 ---
@@ -821,3 +854,84 @@ def showPlot(k):
 
     plot_decision_regions(X_9_1, y_9_1, neighbor)
 ```
+
+## SVMs Support Vector Machine
+"Out-of the Boy"- Methode für Klassifikation
+
+#### Ausgangspunkt lineare Klassifikation
+$h(y) = sing(w^Tx+b)$ (Perzepton) 
+
+Daten sind mit **Rauschen** kontaminiert 
+$\Rightarrow$ Frage: Welches ist die "beste" Gerade?
+
+### Rand (Margin)
+![alt text](image.png)
+Eine Gerade mit breitem Rand ist robuster gegen **Rauschen**
+$\Rightarrow$ SVM wählt max. Rand
+
+*Stützvektoren* = Datenpunkte auf dem Rand / die den Rand verletzen
+
+## Hard-Margin SVM
+
+Annahme: **lineare seperierbare Daten, ohne Rauchen**
+
+[Optimierungsproblem] Finde w,b:
+1. Alle Punkte korrekt qualifiziert (keine Fehlqualifizierung)
+2. Rand maximal
+
+- 🟢 gut für rauschfreie Daten
+- 🔴 Extrem empfinlich gegen Ausreißer
+- 🔴 Hard-Margin erzwingt perfekte Trennung → Overfitting
+
+## Soft-Margin SVM
+Soft = Erlaube Randverletzung & Fehlqualifikation
+
+Regularisierungsparameter $C>0$:
+- $C$ groß -> schmaler Rand,wenig Fehler -> geringe Regularisierung -> Overfitting (Hohe Modellkomplexität)
+- $C$ klein -> großer Rand, mehr Fehkler -> starke Regularisierung -> Underfitting
+
+```python
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+
+pipe = Pipeline([
+    ("scaler",StandardScaler()),
+    ("svc",SVC(kernel="rbf",C=0.1,gamma=0.1))
+])
+pipe.fit(X_9_3_train, y_9_3_train)
+y_pred = clf.predict(X_test)
+```
+
+## Kernel-Trick
+Ziel SVM auf **nicht linear trennbare** Daten anwenden
+
+1. nichtlineare Featuretransformation $z=\phi(x)$
+2. lineare Trennung im Z-Raum
+   
+Problem $\phi(x)$ finden (kann hochdimensional sein)
+
+$x^Tx^′⟶ K(x,x^′)$
+mit $K(x,x′)=ϕ(x)^Tϕ(x′)$
+
+Ersetze das Skalarprodukt der nichtlinear transformierten
+Featurevektoren durch eine Funktion (Kernel), so dass die
+Berechnung **implizit** die Featurevektoren in einen
+höherdimensionalen Featurespace transformiert.
+
+### linear Kernel 
+Für lineare SVM $K(x,x^′)=x^Tx^′$ 
+
+### Polynimialer Kernel
+$K(x,x^′)=(γ*x^Tx^′+ζ)^Q$
+
+$Q$ = Grad des Polynoms (höher = Modelkomplexität) [typsich $Q\leq10$]
+
+🔴 numerisch Instabil 
+
+### Gaußer RVF-Kernel (sehr wichtig)
+$K_{RBF}(x,x^′)=exp(−γ∥x−x^′∥2)$ 
+
+$γ > 0$ (klein=glatt, groß=Komplex->Overfitting)
+
+
