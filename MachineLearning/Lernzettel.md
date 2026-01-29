@@ -200,7 +200,13 @@ plt.show()
 x = np.linspace(0, 1, 400)
 plt.plot(x, f(x),label="")
 ```
-
+#### Daten generieren
+```python
+>>> np.random.rand(3,2)
+array([[ 0.14022471,  0.96360618],  #random
+       [ 0.37601032,  0.25528411],  #random
+       [ 0.49313049,  0.94909878]]) #random
+```
 
 ## Daten Skalieren
 ### `StandardScaler`
@@ -842,6 +848,37 @@ Mit `model_selection.GridSearchCV` optimale Baumtiefe ermitteln
 
 ## KNN Nearest Neighboour Model
 ```python
+# kNN mit n = 1
+def NN(X_train,y_train,X_test):
+    diffs = cdist(X_test,X_train,metric='euclidean')
+    idx_min = np.argmin(diffs,axis=1)
+    return y_train[idx_min]
+```
+
+```python
+def kNN(X_train,y_train,X_test,k=1,task="classify"):
+    diffs = cdist(X_test,X_train,metric='euclidean')
+    idx_knn = np.argsort(diffs,axis=1)[:,:k]
+    neigh_labels = y_train[idx_knn]
+    
+    # Regression (from sklearn.neighbors import KNeighborsRegressor)
+    if task == "regress":
+        return neigh_labels.mean(axis=1)
+
+    # Klassifizierung (from sklearn.neighbors import KNeighborsClassifier)
+    if task == "classify":
+        # Mehrheitsentscheidung
+        # neigh_labels: (n_test, k)
+        preds = np.empty(neigh_labels.shape[0], dtype=neigh_labels.dtype)
+    
+        for i in range(neigh_labels.shape[0]):
+            vals, counts = np.unique(neigh_labels[i], return_counts=True)
+            preds[i] = vals[np.argmax(counts)]   # häufigstes Label
+        return preds
+        
+    return "null"
+```
+```python
 from ipywidgets import interact
 import ipywidgets as widgets
 from sklearn.neighbors import KNeighborsClassifier
@@ -1094,4 +1131,91 @@ def predict(X_train, X_test, y_train, alpha, b, sigma):
     ay = np.multiply(alpha,y_train)
     K = kernel_rbf(X_train, X_test, sigma)
     return np.sign((ay.T @ K) + b).T
+```
+
+! **Keine** sklearn-implementierung !
+
+## Dimensionsreduktion Begründung
+### *Curse of Dimensionality*
+Mit steigender Dimension (D) wird der Raum extrem „leer“, Datenpunkte liegen relativ weit auseinander, und Abstände/Ähnlichkeiten werden zunehmend wenig aussagekräftig (z.B. werden Distanzen immer ähnlicher). Dadurch brauchen viele ML-Methoden deutlich mehr Daten und werden ineffizienter bzw. unzuverlässiger.
+
+## PCA
+0. Merkmale Zentrieren
+    ```python
+    from sklearn.preprocessing import StandardScaler
+    scaler = StandardScaler()
+    scaler.fit(X_train,y_train)
+
+    Z_train = scaler.transform(X_train)
+    Z_test = scaler.transform(X_test)
+    ```
+1. Kovarianzmatrix $S$ aufstellen
+    ```python
+    def kov_matrix(X):
+        return (X.T @ X) / (X.shape[0] - 1)        # Kovarianzmatrix: (n_features, n_features)
+    S = kov_matrix(Z_train)
+
+    S = np.cov(Z_train, rowvar=False)
+    ```
+2. Eigenwertzerlegung
+    ```python
+    eig_vals, eig_vecs= np.linalg.eig(S)
+    idx = np.argsort(eig_vals)[::-1] # ! richtig sortieren
+
+    sorted_vals = eig_vals[idx]
+    sorted_vecs = eig_vecs[:,idx] #  ! Vektoren in Zeilen
+    ```
+3. PVE berechnen
+
+    $PVE(\frac{Var(Z_i)}{Var_{total}})=\frac{\lambda_j}{\sum_j{\lambda_j}}$
+    ```python
+    def PVE(sorted_eig_vals):
+        return sorted_eig_vals/np.sum(sorted_eig_vals)
+
+    pve = PVE(sorted_vals)
+    cumulative_pve = np.cumsum(pve)
+    xs = range(1, len(pve)+1)
+    plt.plot(xs, cumulative_pve, marker='o', color='red', label='Cumulative PVE')
+    plt.plot(xs, pve, marker='o', color='blue', label='PVE')
+    plt.xlabel('Principal Component')
+    plt.xticks(xs)
+    plt.legend()
+    plt.show()
+    ```
+4.  k Komponenten wählen
+    ```python
+    k = 2
+    W = sorted_vecs[:, :k]  # d x k
+    ```
+5. Transform (Projektionskoordinaten)
+    ```python
+    Z = Z_train @ W  # n x k
+    ```
+6. Optional: Rekonstruktion
+    ```python
+    X_recon = Z @ W.T + mu
+    ```
+
+
+sklearn
+```python
+import numpy as np
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+pipe = Pipeline([
+    # Wenn du NUR zentrieren willst, lass StandardScaler weg.
+    ("scaler", StandardScaler(with_mean=True, with_std=True)),
+    ("pca", PCA(n_components=k, svd_solver="full", random_state=0)),
+])
+Z = pipe.fit_transform(X_train)
+
+pca = pipe.named_steps["pca"]
+print("Explained variance:", pca.explained_variance_)
+print("Explained variance ratio:", pca.explained_variance_ratio_)
+print("Components (principal axes, shape k x d):\n", pca.components_)
+print("Z (scores):\n", Z[:5])
+
+# Rekonstruktion (geht über inverse_transform; bei Pipeline rekonstruiert es inklusive Scaling rückwärts)
+X_recon = pipe.inverse_transform(Z)
 ```
