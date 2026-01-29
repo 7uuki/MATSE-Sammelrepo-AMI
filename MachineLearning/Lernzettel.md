@@ -876,6 +876,8 @@ $\Rightarrow$ SVM wählt max. Rand
 Annahme: **lineare seperierbare Daten, ohne Rauchen**
 
 [Optimierungsproblem] Finde w,b:
+
+Formal: minimiere $\frac{1}{2} w^Tw$ unter der Nebenbediung $y_n(w^Tx_n+b)\ge 1$
 1. Alle Punkte korrekt qualifiziert (keine Fehlqualifizierung)
 2. Rand maximal
 
@@ -883,12 +885,13 @@ Annahme: **lineare seperierbare Daten, ohne Rauchen**
 - 🔴 Extrem empfinlich gegen Ausreißer
 - 🔴 Hard-Margin erzwingt perfekte Trennung → Overfitting
 
+
 ## Soft-Margin SVM
 Soft = Erlaube Randverletzung & Fehlqualifikation
 
 Regularisierungsparameter $C>0$:
 - $C$ groß -> schmaler Rand,wenig Fehler -> geringe Regularisierung -> Overfitting (Hohe Modellkomplexität)
-- $C$ klein -> großer Rand, mehr Fehkler -> starke Regularisierung -> Underfitting
+- $C$ klein -> großer Rand, mehr Fehkler -> starke Regularisierung -> bessere Generalisierung/Underfitting
 
 ```python
 from sklearn.pipeline import Pipeline
@@ -902,6 +905,53 @@ pipe = Pipeline([
 pipe.fit(X_9_3_train, y_9_3_train)
 y_pred = clf.predict(X_test)
 ```
+```python
+from sklearn.model_selection import GridSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+
+pipe = Pipeline([
+    ("scaler",StandardScaler()),
+    ("svc",SVC(kernel="rbf")),
+])
+
+param_grid = {
+    "svc__C": np.logspace(-2,11,14),
+    "svc__gamma": np.logspace(-9,3,13)
+}
+
+grid = GridSearchCV(pipe,param_grid=param_grid,scoring="accuracy",cv=5)
+grid.fit(X_9_3_train,y_9_3_train)
+
+result = grid.cv_results_
+df = pd.DataFrame(result)
+err = df.pivot(index="param_svc__C",columns="param_svc__gamma", values="mean_test_score")
+
+plt.imshow(err, origin='lower')
+plt.yticks(
+    np.arange(len(err.index)),     # 0..len(C)-1
+    err.index,                     # C values
+    rotation=0
+)
+plt.ylabel("C")
+plt.xticks(
+    np.arange(len(err.columns)),   # 0..len(gamma)-1
+    err.columns,                   # gamma values
+    rotation=45
+)
+plt.xlabel("$\\gamma$")
+plt.colorbar()
+
+print(grid.best_params_)
+# optional
+y_idx, x_idx = np.unravel_index(grid.best_index_, err.values.shape)
+plt.scatter(x_idx, y_idx, marker="x",color="red")
+```
+### Hinge Loss
+Soft‑Margin SVM entspricht der Minimierung der Hinge Loss:
+
+![alt text](image-1.png)
 
 ## Kernel-Trick
 Ziel SVM auf **nicht linear trennbare** Daten anwenden
@@ -929,9 +979,119 @@ $Q$ = Grad des Polynoms (höher = Modelkomplexität) [typsich $Q\leq10$]
 
 🔴 numerisch Instabil 
 
-### Gaußer RVF-Kernel (sehr wichtig)
-$K_{RBF}(x,x^′)=exp(−γ∥x−x^′∥2)$ 
+### Gaußer RBF-Kernel (sehr wichtig)
+$K_{RBF}(x,x^′)=exp(−γ∥x−x^′∥^2)$ ; $\gamma >0$
 
-$γ > 0$ (klein=glatt, groß=Komplex->Overfitting)
+Alternativ mit $\sigma$: $\gamma = \frac{1}{2\sigma^2}$
+
+$K_{RBF}(x,x^′)=exp(−\frac{∥x−x^′∥^2}{2\sigma^2})$ 
+
+- $\gamma$ klein / $\sigma$ groß = Fehler sind “billiger” → Modell toleriert mehr Fehlklassifikationen -> glatte Entscheidungsgrenze -> Underfitting
+- $\gamma$ groß / $\sigma$ klein = Trainingsfehler werden stark bestraft->  Modell versucht, fast alles korrekt zu klassifizieren ->  Komplexe Entescheidungsgrenze -> Overfitting
+
+$\beta = \gamma $
+![alt text](image-2.png)
 
 
+### Zusammenspiel aller Entscheidungen
+Bei jeder SVM musst du festlegen:
+
+1. Margin Hard vs. Soft (praktisch immer Soft)
+2. Linear vs. Nichtlinear (Kernel oder kein Kernel)
+3. Hyperparameter(C Regularisierung, Kernelparameter [z. B. σ\sigmaσ])
+
+## LS‑SVM – Einordnung
+
+Vereinfachte Variante der SVM
+Quadratischer Fehler statt Hinge Loss
+=> Führt zu linearem Gleichungssystem
+
+🟢 einfache Implementierung
+🔴 numerisch Sparsity, schlechtere Robustheitseigenschaften 
+
+1. Kernel Funktion $K(x_k,x_i) := $exp(-\frac{\| x-x^\prime\|^2 }{2\sigma^2})$
+```python
+from scipy.spatial import distance
+
+def kernel_rbf(X1,X2,sigma):
+    d = cdist(X1,X2,metric="sqeuclidean") #squared euclidian
+    return np.exp(-d/(2*(sigma**2)))
+```
+2. Bestimme $N_1 \times N_2$ Matrix $\Omega = \mathbf{y}\mathbf{y}^\text{T}\odot K$
+    - $\mathbf{y}\mathbf{y}^\text{T}$ ist ein [äußeres (=dyadisches) Produkt](https://de.wikipedia.org/wiki/Dyadisches_Produkt), welches eine Matrix erzeugt.
+    - $\odot$ bedeutet: Es werden die Elemente der beiden Matrizen elementweise multipliziert ([Hadamard-Produkt](https://de.wikipedia.org/wiki/Hadamard-Produkt)). Dies ist also keine normale Matrixmultiplikation.
+    - $K$ ist die Kernelmatrix, die Sie mit dem Aufruf `kernel_rbf(X, X, sigma)` erzeugen.
+```python
+def omega(X,y,sigma):
+    yy = y @ y.reshape(-1,1).T
+    K = kernel_rbf(X, X, sigma)
+    return np.multiply(yy,K) # Elementweise Multiplikation
+```
+3. Bestimme Matrix $A$ Strafterm: $\frac{1}{\gamma}=C $
+- Großes $\gamma$: -> (starker Strafterm auf Fehler)
+Trainingsfehler werden stark bestraft → Modell versucht, fast alles korrekt zu klassifizieren. Entscheidungsgrenze wird tendenziell komplexer. Risiko: Overfitting.
+- Kleines $\gamma$ (schwacher Strafterm)
+Fehler sind “billiger” → Modell toleriert mehr Fehlklassifikationen.
+Entscheidungsgrenze wird glatter/stabiler.
+Risiko: Underfitting.
+$$
+	\underbrace{\left[
+	\begin{array}{c|c}
+		0 & \mathbf{y}^\text{T} \\
+		\hline
+		\mathbf{y} & \Omega + I/\gamma
+	\end{array}
+	\right]}_{A}
+	\underbrace{\left[
+	\begin{array}{c}
+		b \\
+		\hline
+		\vec{\alpha}
+	\end{array}
+	\right]}_{\mathbf{s}}
+	=
+	\underbrace{\left[
+	\begin{array}{c}
+		0 \\
+		\hline
+		\mathbf{1}
+	\end{array}
+	\right]}_{\mathbf{z}}
+$$
+```python
+def get_A(X,y,sigma,gamma):
+    inner = omega(X,y,sigma)
+    inner += np.identity(len(inner)) / gamma
+
+    return np.block([
+        [0,               y.reshape(-1,1).T],
+        [y, inner               ]
+    ])
+```
+4. Invertiere  $A$ und erhalte $b$ und $\alpha$
+$$\mathbf{s} = \left[
+	\begin{array}{c}
+		b \\
+		\hline
+		\vec{\alpha}
+	\end{array}
+	\right] = A^{-1} \mathbf{z}$$
+```python
+z = np.ones((len(A),1))
+z[0] = 0
+
+z = np.vstack([0,np.ones((y.size,1))]) # Alternative
+
+s = np.linalg.pinv(A) @ z
+
+b = s[0]
+alpha = s[1:]
+```
+
+5. Vorhersage des Labels $y(x) = \text{sign} \left[\sum_{k=1}^N \alpha_k y_k K(x_k, x) + b \right] $
+```python
+def predict(X_train, X_test, y_train, alpha, b, sigma):
+    ay = np.multiply(alpha,y_train)
+    K = kernel_rbf(X_train, X_test, sigma)
+    return np.sign((ay.T @ K) + b).T
+```
