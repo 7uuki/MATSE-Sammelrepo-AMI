@@ -20,6 +20,7 @@
       - [Histogram](#histogram)
     - [Matplotlib](#matplotlib)
       - [Funktion Ploten](#funktion-ploten)
+      - [Daten generieren](#daten-generieren)
   - [Daten Skalieren](#daten-skalieren)
     - [`StandardScaler`](#standardscaler)
     - [`MinMaxScaler`](#minmaxscaler)
@@ -51,10 +52,17 @@
     - [Rand (Margin)](#rand-margin)
   - [Hard-Margin SVM](#hard-margin-svm)
   - [Soft-Margin SVM](#soft-margin-svm)
+    - [Hinge Loss](#hinge-loss)
   - [Kernel-Trick](#kernel-trick)
     - [linear Kernel](#linear-kernel)
     - [Polynimialer Kernel](#polynimialer-kernel)
-    - [Gaußer RVF-Kernel (sehr wichtig)](#gaußer-rvf-kernel-sehr-wichtig)
+    - [Gaußer RBF-Kernel (sehr wichtig)](#gaußer-rbf-kernel-sehr-wichtig)
+    - [Zusammenspiel aller Entscheidungen](#zusammenspiel-aller-entscheidungen)
+  - [LS‑SVM – Einordnung](#lssvm--einordnung)
+  - [Dimensionsreduktion Begründung](#dimensionsreduktion-begründung)
+    - [*Curse of Dimensionality*](#curse-of-dimensionality)
+  - [PCA](#pca)
+    - [Kernel-PCA](#kernel-pca)
 
 ---
 
@@ -1218,4 +1226,37 @@ print("Z (scores):\n", Z[:5])
 
 # Rekonstruktion (geht über inverse_transform; bei Pipeline rekonstruiert es inklusive Scaling rückwärts)
 X_recon = pipe.inverse_transform(Z)
-```
+```     
+
+### Kernel-PCA
+1. Kernel Wählen (beispiel RBF):
+   
+   $K_{RBF}(x_i,x_j)  = exp(-\gamma  \left \| x_i - x_j \right \|^2)$ 
+   *(leicht anders als SMV-Kernel)*
+   ```python
+   def rbf_kernel(x1,x2,gamma): 
+    return np.exp(-gamma*cdist(x1,x2,metric="sqeuclidean"))
+   ``` 
+2. $K$ bestimmen und Zentrieren
+    $$\mathbf{1}_n = \frac{1}{n}\mathbf{11}^\top$$
+    $$\tilde{K} = K - \mathbf{1}_n K - K \mathbf{1}_n + \mathbf{1}_n K \mathbf{1}_n$$
+
+    ```python
+    K = rbf_kernel(X,X,15)
+    N = len(K)
+    einsN = np.ones((N,N))/N
+    K_ = K - einsN @ K - K @ einsN + einsN @ K @ einsN
+    ```
+3. Eigenwertproblem lösen + sortieren
+    ```python
+    eigvals, eigvecs = np.linalg.eig(K_)
+    idx = np.argsort(eigvals)[::-1]
+    eigvals_sorted = eigvals[idx]
+    eigvecs_sorted = eigvecs[:,idx]
+    ```
+4. Eigenvektoren normieren
+   $\tilde{\alpha_j}=\frac{1}{\sqrt{\lambda_j}}\frac{\alpha_j}{\left \| \alpha_j \right \|}$
+   ```python
+   scaled_alphas = 1/np.sqrt(eigvals_sorted) * eigvecs_sorted / np.linalg.norm(eigvecs_sorted,axis=0) # Spaltennorm (EigVecs jeweils in der Spalte)
+   ``` 
+5. Daten Projetzieren 
