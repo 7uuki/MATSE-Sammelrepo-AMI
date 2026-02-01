@@ -62,7 +62,8 @@
   - [Dimensionsreduktion Begründung](#dimensionsreduktion-begründung)
     - [*Curse of Dimensionality*](#curse-of-dimensionality)
   - [PCA](#pca)
-    - [Kernel-PCA](#kernel-pca)
+    - [Kernel-PCA kPCA](#kernel-pca-kpca)
+  - [LDA](#lda)
 
 ---
 
@@ -1204,7 +1205,6 @@ Mit steigender Dimension (D) wird der Raum extrem „leer“, Datenpunkte liegen
     X_recon = Z @ W.T + mu
     ```
 
-
 sklearn
 ```python
 import numpy as np
@@ -1228,7 +1228,7 @@ print("Z (scores):\n", Z[:5])
 X_recon = pipe.inverse_transform(Z)
 ```     
 
-### Kernel-PCA
+### Kernel-PCA kPCA
 1. Kernel Wählen (beispiel RBF):
    
    $K_{RBF}(x_i,x_j)  = exp(-\gamma  \left \| x_i - x_j \right \|^2)$ 
@@ -1260,3 +1260,116 @@ X_recon = pipe.inverse_transform(Z)
    scaled_alphas = 1/np.sqrt(eigvals_sorted) * eigvecs_sorted / np.linalg.norm(eigvecs_sorted,axis=0) # Spaltennorm (EigVecs jeweils in der Spalte)
    ``` 
 5. Daten Projetzieren 
+    ```python
+    def proj_x(x,j,X,alphas,gamma):
+        alpha_j = alphas[:,j] 
+        # zentrierte kPCA-Koeffizienten der j-ten Komponente
+        # x.respahe(-1,1): (d,) => (1,d) Notwendig, damit rbf_kernel paarweise Distanzen zwischen zwei Punktmengen berechnen kann.
+        kx = rbf_kernel(x.reshape(1, -1), X, gamma).reshape(-1) 
+        # [k(x,X[0]),...,k(x,X[N-1])]
+
+        # Zentrierung kompatibel zum Training
+        kx_c = kx - K.mean(axis=1) - kx.mean() + K.mean()
+        
+        return np.dot(kx_c,alpha_j) # ⟨ϕ(x),w_j⟩
+    ```
+sklearn 
+```python
+from sklearn.decomposition import KernelPCA
+
+kPCA = KernelPCA(
+    n_components=2,
+    kernel="rbf",
+    gamma=15
+)
+
+Z = kPCA.fit_transform(X)
+plt.scatter(Z[:,0],Z[:,1],c=y)
+
+eigvals = kPCA.eigenvalues_
+eigvecs = kPCA.eigenvectors_
+
+# Projektion einzelner Punkt
+x = np.array([0,0]).reshape(1, -1) #(1,d)
+z = kPCA.transform(x)   # Form: (1, n_components)
+```
+
+## LDA
+1. Between-Class Scatter Matrix: $S_B$  *Wie gut sind die Klassen getrennt?*  
+    Misst wie weit die Klassenmittelwerte voneinander entfernt sind
+    $$S_B=\sum_{k=1}^{K}n_k(\mu_k-\mu)(\mu_k-\mu)^T= \text{Bei 2 Klassen: } (m^{(1)}-m^{(2)})(m^{(1)}-m^{(2)})^T$$
+    - $n_k$: Anzahl Samples in Klasse k
+    - $\mu_k$/$m^{(k)}$: Klassenmittelwert der Klasse k
+    - $\mu$: Gesamtmittelwert der Daten
+    ```python
+    mus = np.array([X_12_2[y_12_2==c].mean(axis=0) for c in np.unique(y_12_2)])
+    diff = mus[0]-mus[1]
+    Sb = np.outer(diff,diff) # diff.T@diff für Vektoren
+    ```
+2. Within-Class Scatter Matric: $S_W$ *Wie kompakt oder breit ist jede Klasse für sich?*
+    Misst, wie stark die Punkte innerhalb jeder Klasse streuen.
+    $$S_W=\sum_{n\in{C_k}}(x_n-m^{(k)})(x_n-m^{(k)})^T$$
+    ```python
+    S_W = np.zeros((D, D))
+    for c in np.unique(y):
+        Xc = X[y == c]
+        mu_c = Xc.mean(axis=0)
+        diff = Xc - mu_c
+        S_c = diff.T @ diff
+        S_W += S_c
+    ```
+3. Eigenwertzerlegung $S_W^{-1}S_B$
+    ```python
+    Z = np.linalg.inv(S_W)@Sb
+    eigvals,eigvecs = np.linalg.eig(Z)
+    idx = np.argsort(eigvals)[::-1]
+    eigvals_sorted = eigvals[idx]
+    eigvecs_sorted = eigvecs[:,idx]
+    ```
+4. Projektion auf Eigenvektor $(j)$
+    ```python
+    def proj_x(X,y,eigvals_sorted,eigvecs_sorted,j):
+        vecj = eigvecs_sorted[:,j]
+        proj = X @ vecj
+        plt.scatter(proj, np.zeros(len(proj)), s=100, c=y)
+    ```
+```python
+def lda_scatter_matrices(X, y):
+    classes = np.unique(y)
+    D = X.shape[1]
+
+    S_W = np.zeros((D, D))
+    S_B = np.zeros((D, D))
+
+    mu_global = X.mean(axis=0)  # Gesamtmittelwert
+
+    for c in classes:
+        Xc = X[y == c]
+        n_c = Xc.shape[0]
+
+        mu_c = Xc.mean(axis=0)
+
+        # ----- S_W -----
+        diff = Xc - mu_c                 # (n_c, d)
+        S_W += diff.T @ diff             # (d, d)
+
+        # ----- S_B -----
+        mean_diff = (mu_c - mu_global).reshape(-1, 1)  # (d,1)
+        S_B += n_c * (mean_diff @ mean_diff.T)         # (d,d)
+
+    return S_W, S_B
+```
+sklearn 
+```python
+import numpy as np
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+lda = LinearDiscriminantAnalysis(n_components=1)
+lda.fit(X, y)
+
+# Klassifikation
+pred = lda.predict(X)
+
+# Projektion (Dimensionsreduktion)
+X_proj = lda.transform(X)
+plt.scatter(X_proj, np.zeros(len(X_proj)), s=100, c=y)
+```
