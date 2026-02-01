@@ -1204,7 +1204,6 @@ Mit steigender Dimension (D) wird der Raum extrem „leer“, Datenpunkte liegen
     X_recon = Z @ W.T + mu
     ```
 
-
 sklearn
 ```python
 import numpy as np
@@ -1228,7 +1227,7 @@ print("Z (scores):\n", Z[:5])
 X_recon = pipe.inverse_transform(Z)
 ```     
 
-### Kernel-PCA
+### Kernel-PCA kPCA
 1. Kernel Wählen (beispiel RBF):
    
    $K_{RBF}(x_i,x_j)  = exp(-\gamma  \left \| x_i - x_j \right \|^2)$ 
@@ -1260,3 +1259,36 @@ X_recon = pipe.inverse_transform(Z)
    scaled_alphas = 1/np.sqrt(eigvals_sorted) * eigvecs_sorted / np.linalg.norm(eigvecs_sorted,axis=0) # Spaltennorm (EigVecs jeweils in der Spalte)
    ``` 
 5. Daten Projetzieren 
+    ```python
+    def proj_x(x,j,X,alphas,gamma):
+        alpha_j = alphas[:,j] 
+        # zentrierte kPCA-Koeffizienten der j-ten Komponente
+        # x.respahe(-1,1): (d,) => (1,d) Notwendig, damit rbf_kernel paarweise Distanzen zwischen zwei Punktmengen berechnen kann.
+        kx = rbf_kernel(x.reshape(1, -1), X, gamma).reshape(-1) 
+        # [k(x,X[0]),...,k(x,X[N-1])]
+
+        # Zentrierung kompatibel zum Training
+        kx_c = kx - K.mean(axis=1) - kx.mean() + K.mean()
+        
+        return np.dot(kx_c,alpha_j) # ⟨ϕ(x),w_j⟩
+    ```
+sklearn 
+```python
+from sklearn.decomposition import KernelPCA
+
+kPCA = KernelPCA(
+    n_components=2,
+    kernel="rbf",
+    gamma=15
+)
+
+Z = kPCA.fit_transform(X)
+plt.scatter(Z[:,0],Z[:,1],c=y)
+
+eigvals = kPCA.eigenvalues_
+eigvecs = kPCA.eigenvectors_
+
+# Projektion einzelner Punkt
+x = np.array([0,0]).reshape(1, -1) #(1,d)
+z = kPCA.transform(x)   # Form: (1, n_components)
+```
