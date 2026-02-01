@@ -1373,6 +1373,4 @@ pred = lda.predict(X)
 # Projektion (Dimensionsreduktion)
 X_proj = lda.transform(X)
 plt.scatter(X_proj, np.zeros(len(X_proj)), s=100, c=y)
-=======
->>>>>>> 14e74d924dd41666004f23682f20eba630aa4240
 ```
